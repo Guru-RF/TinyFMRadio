@@ -1,22 +1,38 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022 tinkeringtech for TinkeringTech LLC
-#
-# SPDX-License-Identifier: Unlicense
-
-# pylint: disable=global-statement, too-many-branches, too-many-statements
 import time
-import busio
 import board
+import busio
 import supervisor
 from adafruit_bus_device.i2c_device import I2CDevice
 import tinkeringtech_rda5807m
+import displayio
+import terminalio
+import adafruit_displayio_ssd1306
+from simpleio import map_range
+from adafruit_bitmap_font import bitmap_font
+from adafruit_progressbar import HorizontalProgressBar
+from adafruit_display_text.label import Label
+from digitalio import DigitalInOut, Direction, Pull
 
-# Preset stations. 8930 means 89.3 MHz, etc.
-presets = [9860, 9510, 9710, 9950, 10100, 10110, 10650]
+
+# Display
+displayio.release_displays()
+
+presets = [  # Preset stations
+    10210,
+    9510,
+    9070,
+    9950,
+    10100,
+    10110,
+    10650
+]
+
 i_sidx = 0  # Starting at station with index 3
 
 # Initialize i2c bus
 # If your board does not have STEMMA_I2C(), change as appropriate.
 i2c = busio.I2C(scl=board.GP19, sda=board.GP18)
+i2c2 = busio.I2C(scl=board.GP21, sda=board.GP20)
 
 # Receiver i2c communication
 address = 0x11
@@ -45,6 +61,11 @@ rds.attach_text_callback(textHandle)
 radio_i2c = I2CDevice(i2c, address)
 radio = tinkeringtech_rda5807m.Radio(radio_i2c, rds, presets[i_sidx], vol)
 radio.set_band(band)  # Minimum frequency - 87 Mhz, max - 108 Mhz
+
+# oled
+display_bus = displayio.I2CDisplay(i2c2, device_address=0x3C)
+display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=128, height=64, rotation=180)
+display.brightness = 0.01
 
 # Read input from serial
 def serial_read():
